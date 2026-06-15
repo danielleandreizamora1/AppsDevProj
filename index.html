@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Checklist</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body{
+      background:#f3f4f6;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      color:#0f172a;
+    }
+
+    .container{
+      width:100%;
+      max-width:600px;
+      text-align:center;
+    }
+
+    .logo{
+      width:42px;
+      height:42px;
+      background:#0f172a;
+      color:white;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto 15px;
+      font-size:20px;
+      font-weight:bold;
+    }
+
+    h1{
+      font-size:42px;
+      margin-bottom:8px;
+      font-weight:700;
+    }
+
+    .date{
+      color:#64748b;
+      margin-bottom:35px;
+      font-size:16px;
+    }
+
+    .card{
+      background:white;
+      padding:18px;
+      border-radius:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+      border:1px solid #e5e7eb;
+    }
+
+    .input-group{
+      display:flex;
+      gap:10px;
+      margin-bottom:20px;
+    }
+
+    .input-group input{
+      flex:1;
+      padding:14px;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      outline:none;
+      font-size:15px;
+    }
+
+    .input-group button{
+      width:48px;
+      border:none;
+      border-radius:10px;
+      background:#0f172a;
+      color:white;
+      font-size:24px;
+      cursor:pointer;
+      transition:0.2s;
+    }
+
+    .input-group button:hover{
+      background:#1e293b;
+    }
+
+    .task-box{
+      border:2px dashed #d1d5db;
+      border-radius:14px;
+      min-height:120px;
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      justify-content:center;
+    }
+
+    .empty{
+      color:#64748b;
+      font-size:15px;
+    }
+
+    .task{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      background:#f8fafc;
+      padding:12px 15px;
+      border-radius:10px;
+    }
+
+    .task-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .task.completed span{
+      text-decoration:line-through;
+      color:#94a3b8;
+    }
+
+    .delete-btn{
+      background:red;
+      color:white;
+      border:none;
+      padding:6px 10px;
+      border-radius:6px;
+      cursor:pointer;
+    }
+
+    .footer{
+      margin-top:25px;
+      color:#64748b;
+      font-size:14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="logo">✓</div>
+
+    <h1>Daily Checklist</h1>
+
+    <div class="date" id="currentDate"></div>
+
+    <div class="card">
+
+      <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Add a task or reminder..." />
+        <button onclick="addTask()">+</button>
+      </div>
+
+      <div class="task-box" id="taskBox">
+        <div class="empty" id="emptyText">
+          No tasks yet. Add your first reminder above.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      Your tasks are saved on this device and reset each new day.
+    </div>
+
+  </div>
+
+  <script>
+    const taskInput = document.getElementById("taskInput");
+    const taskBox = document.getElementById("taskBox");
+    const emptyText = document.getElementById("emptyText");
+
+    // Display Current Date
+    const today = new Date();
+    const options = { weekday: 'long', month: 'long', day: 'numeric' };
+    document.getElementById("currentDate").innerText =
+      today.toLocaleDateString('en-US', options);
+
+    // Daily Reset
+    const currentDay = today.toDateString();
+    const savedDay = localStorage.getItem("taskDay");
+
+    if(savedDay !== currentDay){
+      localStorage.removeItem("tasks");
+      localStorage.setItem("taskDay", currentDay);
+    }
+
+    // Load Tasks
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    renderTasks();
+
+    // Add Task
+    function addTask(){
+      const text = taskInput.value.trim();
+
+      if(text === "") return;
+
+      tasks.push({
+        text:text,
+        completed:false
+      });
+
+      saveTasks();
+      renderTasks();
+
+      taskInput.value = "";
+    }
+
+    // Render Tasks
+    function renderTasks(){
+      taskBox.innerHTML = "";
+
+      if(tasks.length === 0){
+        taskBox.innerHTML = `
+          <div class="empty">
+            No tasks yet. Add your first reminder above.
+          </div>
+        `;
+        return;
+      }
+
+      tasks.forEach((task,index)=>{
+
+        const taskDiv = document.createElement("div");
+        taskDiv.className = task.completed ? "task completed" : "task";
+
+        taskDiv.innerHTML = `
+          <div class="task-left">
+            <input type="checkbox"
+              ${task.completed ? "checked" : ""}
+              onchange="toggleTask(${index})">
+            <span>${task.text}</span>
+          </div>
+
+          <button class="delete-btn" onclick="deleteTask(${index})">
+            Delete
+          </button>
+        `;
+
+        taskBox.appendChild(taskDiv);
+      });
+    }
+
+    // Toggle Complete
+    function toggleTask(index){
+      tasks[index].completed = !tasks[index].completed;
+      saveTasks();
+      renderTasks();
+    }
+
+    // Delete Task
+    function deleteTask(index){
+      tasks.splice(index,1);
+      saveTasks();
+      renderTasks();
+    }
+
+    // Save
+    function saveTasks(){
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    // Enter Key Support
+    taskInput.addEventListener("keypress", function(e){
+      if(e.key === "Enter"){
+        addTask();
+      }
+    });
+  </script>
+
+</body>
+</html>
